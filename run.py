@@ -65,8 +65,72 @@ def TCRMMS(pdf_dir, output_dir, bp_code, mat_code, img_path, logger, db):
                 img_path,
                 ocr, 
                 page_num)
-            has_roi = 
+            has_roi = DocImg.get_roi_dat()
+        except Exception as e:
+            print("Passing this page :" , e)
+        # 1 file 1 lot - This can have no lot data at first page
+        # 1 file n page n lots 
+        # 1 file n page n*m lots 
+        if has_roi:
+            print("Found ROI Data")
+            DocImg.align_image()
+            has_key = DocImg._read_key_data("LOT_VAL")
+            DocImg.get_text()
+            if (page_code !=3):
+                lots += DocImg.lots
+                results += DocImg.results
+                dfs += DocImg.dfs
+            elif has_key: # 1 file n or n*m lots 
+                DocImg.corresponding_lot()
+                tc_doc_imgs.append(DocImg)
+            else:
+                logger.add_log("Cannot Read Lot...")
+                output_param =101
+        else:
+            logger.add_log("No ROI for this page. passing...")
+        # End of loop 
+    
+     if len(tc_doc_imgs)==0:
+         DocImg.lots = lots
+         DocImg.results = results
+         DocImg.dfs = dfs
+         DocImg.corresponding_lot()
+         tc_doc_imgs.append(DocImg)
+         
+     for tc_doc_img in tc_doc_imgs:
+         for a file in tc_doc_img.results :
+             file_name = "_".join(a_file.iloc[:3,1].tolist()) + ".csv"
+             a_file.columns = ['', '']
+             if bp_mat in C.KOREAN_MODEL:
+                 a_file.to_csv(os.path.join(output_dir, file_name), index=False, encoding='cp949')
+             else:
+                 a_file.to_csv(os.path.join(output_dir, file_name), index=False)
+            
+    return output_param
 
+if __name__ == "__main__":
+    pdf_dir = args.pdf_dir.replace("\\", "/").replace'"', "").replace('.PDF', '.pdf') 
+    output_dir = args.output_dir.replace("\\", "/").replace('"', "")
+    if os.path.exists(pdf_dir):
+        logger.add_log(f"OCR Starting for {pdf_dir}")
+        output = TCRMMS(
+            pdf_dir,
+            output_dir,
+            args.bp_code,
+            args.material_code,
+            args.img_path,
+            logger,
+            dbobj
+        )
+    else:
+        outpu=1
+        logger.add_log(f"No Such File {pdf_dir}.")
+        
+    logger.add_log(f"Output : {output}")
+    print(output_
+
+    
+    
 
 
 
